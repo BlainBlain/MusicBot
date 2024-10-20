@@ -21,49 +21,79 @@ import com.jagrosh.jmusicbot.audio.AudioHandler;
 import com.jagrosh.jmusicbot.commands.DJCommand;
 import com.jagrosh.jmusicbot.settings.Settings;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
+import net.dv8tion.jda.api.entities.MessageReaction;
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-/**
- *
- * @author John Grosh <john.a.grosh@gmail.com>
- */
-public class VolumeCmd extends DJCommand
-{
-    public VolumeCmd(Bot bot)
-    {
+public class VolumeCmd extends DJCommand {
+    public VolumeCmd(Bot bot) {
         super(bot);
         this.name = "volume";
-        this.aliases = bot.getConfig().getAliases(this.name);
         this.help = "sets or shows volume";
+        this.aliases = bot.getConfig().getAliases(this.name);
         this.arguments = "[0-150]";
     }
 
     @Override
-    public void doCommand(CommandEvent event)
-    {
-        AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
-        Settings settings = event.getClient().getSettingsFor(event.getGuild());
-        int volume = handler.getPlayer().getVolume();
-        if(event.getArgs().isEmpty())
-        {
-            event.reply(FormatUtil.volumeIcon(volume)+" Current volume is `"+volume+"`");
-        }
-        else
-        {
-            int nvolume;
-            try{
-                nvolume = Integer.parseInt(event.getArgs());
-            }catch(NumberFormatException e){
-                nvolume = -1;
-            }
-            if(nvolume<0 || nvolume>150)
-                event.reply(event.getClient().getError()+" Volume must be a valid integer between 0 and 150!");
-            else
-            {
-                handler.getPlayer().setVolume(nvolume);
-                settings.setVolume(nvolume);
-                event.reply(FormatUtil.volumeIcon(nvolume)+" Volume changed from `"+volume+"` to `"+nvolume+"`");
-            }
+    public void doCommand(CommandEvent event) {
+        if (event.getArgs().isEmpty()) {
+            // If no argument is provided, show current volume and add reaction buttons
+            showCurrentVolume(event);
+        } else {
+            adjustVolume(event);
         }
     }
-    
+
+    private void showCurrentVolume(CommandEvent event) {
+        AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
+        int volume = handler.getPlayer().getVolume();
+        event.reply(FormatUtil.volumeIcon(volume) + " Current volume is `" + volume + "`",
+                msg -> {
+                    msg.addReaction("🔉").queue(); // Volume down reaction
+                    msg.addReaction("🔊").queue(); // Volume up reaction
+                });
+    }
+
+    private void adjustVolume(CommandEvent event) {
+        AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
+        Settings settings = event.getClient().getSettingsFor(event.getGuild());
+        int volume = handler.getPlayer().getVolume();
+        
+        int newVolume;
+        try {
+            newVolume = Integer.parseInt(event.getArgs());
+        } catch (NumberFormatException e) {
+            event.reply(event.getClient().getError() + " Volume must be a valid integer between 0 and 150!");
+            return;
+        }
+
+        if (newVolume < 0 || newVolume > 150) {
+            event.reply(event.getClient().getError() + " Volume must be a valid integer between 0 and 150!");
+            return;
+        }
+
+        int oldVolume = volume;
+        handler.getPlayer().setVolume(newVolume);
+        settings.setVolume(newVolume);
+        event.reply(FormatUtil.volumeIcon(newVolume) + " Volume changed from `" + oldVolume + "` to `" + newVolume + "`",
+        msg -> {
+            msg.addReaction("🔉").queue(); // Volume down reaction
+            msg.addReaction("🔊").queue(); // Volume up reaction
+        });
+    }
+
+    public static void volumeUp(Bot bot, String guildId) {
+        AudioHandler handler = (AudioHandler) bot.getJDA().getGuildById(guildId).getAudioManager().getSendingHandler();
+        int volume = handler.getPlayer().getVolume();
+        int newVolume = Math.min(150, volume + 2); // Increase volume by 2
+        handler.getPlayer().setVolume(newVolume);
+    }
+
+    public static void volumeDown(Bot bot, String guildId) {
+        AudioHandler handler = (AudioHandler) bot.getJDA().getGuildById(guildId).getAudioManager().getSendingHandler();
+        int volume = handler.getPlayer().getVolume();
+        int newVolume = Math.max(0, volume - 2); // Decrease volume by 2
+        handler.getPlayer().setVolume(newVolume);
+    }
 }
+

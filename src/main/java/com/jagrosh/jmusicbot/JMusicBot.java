@@ -202,7 +202,8 @@ public class JMusicBot
                         new SeekCmd(bot),
                         new ShuffleCmd(bot),
                         new SkipCmd(bot),
-
+						new skipSegCmd(bot),
+						
                         new ForceRemoveCmd(bot),
                         new ForceskipCmd(bot),
                         new MoveTrackCmd(bot),

@@ -99,8 +99,43 @@ public class NowplayingHandler
         toRemove.forEach(id -> lastNP.remove(id));
     }
 
+    
+	public void updateTopic(long guildId, AudioHandler handler, boolean wait)
+    { if (bot.getConfig().getTopicUpdate()) {
+        Guild guild = bot.getJDA().getGuildById(guildId);
+        if(guild==null)
+            return;
+        Settings settings = bot.getSettingsManager().getSettings(guildId);
+        TextChannel tchan = settings.getTextChannel(guild);
+        if(tchan!=null && guild.getSelfMember().hasPermission(tchan, Permission.MANAGE_CHANNEL))
+        {
+            String otherText;
+            String topic = tchan.getTopic();
+            if(topic==null || topic.isEmpty())
+                otherText = "\u200B";
+            else if(topic.contains("\u200B"))
+                otherText = topic.substring(topic.lastIndexOf("\u200B"));
+            else
+                otherText = "\u200B\n "+topic;
+            String text = handler.getTopicFormat(bot.getJDA()) + otherText;
+            if(!text.equals(tchan.getTopic()))
+            {
+                try 
+                {
+                    // normally here if 'wait' was false, we'd want to queue, however,
+                    // new discord ratelimits specifically limiting changing channel topics
+                    // mean we don't want a backlog of changes piling up, so if we hit a 
+                    // ratelimit, we just won't change the topic this time
+                    tchan.getManager().setTopic(text).complete(wait);
+                } 
+                catch(PermissionException | RateLimitedException ignore) {}
+            }
+        }
+    }
+}
+
     // "event"-based methods
-    public void onTrackUpdate(AudioTrack track)
+    public void onTrackUpdate(long guildId, AudioTrack track, AudioHandler handler)
     {
         // update bot status if applicable
         if(bot.getConfig().getSongInStatus())
@@ -110,6 +145,9 @@ public class NowplayingHandler
             else
                 bot.resetGame();
         }
+        
+        // update channel topic if applicable
+        updateTopic(guildId, handler, false);
     }
     
     public void onMessageDelete(Guild guild, long messageId)

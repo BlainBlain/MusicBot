@@ -16,6 +16,7 @@
 package com.jagrosh.jmusicbot;
 
 import com.jagrosh.jmusicbot.utils.OtherUtil;
+import com.jagrosh.jmusicbot.commands.dj.VolumeCmd;
 import java.util.concurrent.TimeUnit;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
@@ -30,6 +31,14 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+// This one below I added
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
+import net.dv8tion.jda.api.entities.MessageReaction;
+import com.jagrosh.jdautilities.command.CommandEvent;
+import com.jagrosh.jmusicbot.audio.AudioHandler;
+import com.jagrosh.jmusicbot.utils.FormatUtil;
+
+
 
 /**
  *
@@ -111,6 +120,72 @@ public class Listener extends ListenerAdapter
         credit(event.getJDA());
     }
     
+    @Override
+    public void onMessageReactionAdd(MessageReactionAddEvent event) {
+        if (!event.getUser().isBot()) {
+            MessageReaction.ReactionEmote emote = event.getReaction().getReactionEmote();
+            if (emote.isEmoji()) {
+                String emoji = emote.getEmoji();
+                if (emoji.equals("🔊")) {
+                    // Handle volume up
+                    VolumeCmd.volumeUp(bot, event.getGuild().getId());
+                    handleVolumeChange(event);
+                } else if (emoji.equals("🔉")) {
+                    // Handle volume down
+                    VolumeCmd.volumeDown(bot, event.getGuild().getId());
+                    handleVolumeChange(event);
+                }
+                else if ("⏭️".equals(emoji)) {
+                    handleSkipReaction(event);
+                }
+            }
+        }
+    }
+
+    private void handleVolumeChange(MessageReactionAddEvent event) {
+        event.getChannel().retrieveMessageById(event.getMessageId()).queue(message -> {
+            message.delete().queue();
+            // Re-add the new current volume message
+            AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
+            int volume = handler.getPlayer().getVolume();
+            event.getChannel().sendMessage(FormatUtil.volumeIcon(volume) + " Current volume is `" + volume + "`")
+                    .queue(msg -> {
+                        msg.addReaction("🔉").queue(); // Volume down reaction
+                        msg.addReaction("🔊").queue(); // Volume up reaction
+                    });
+        });
+    }
+
+    private void handleSkipReaction(MessageReactionAddEvent event) {
+        event.getChannel().retrieveMessageById(event.getMessageId()).queue(message -> {
+            message.delete().queue();
+        });
+
+        // Re-add the new skip message with updated information
+        AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
+        if (handler == null) return;
+
+        int listeners = (int) event.getGuild().getAudioManager().getConnectedChannel().getMembers().stream()
+                .filter(m -> !m.getUser().isBot() && !m.getVoiceState().isDeafened()).count();
+        double skipRatio = bot.getSettingsManager().getSettings(event.getGuild()).getSkipRatio();
+        if (skipRatio == -1) {
+            skipRatio = bot.getConfig().getSkipRatio();
+        }
+
+        int skippers = (int) event.getGuild().getAudioManager().getConnectedChannel().getMembers().stream()
+                .filter(m -> handler.getVotes().contains(m.getUser().getId())).count();
+        int required = (int) Math.ceil(listeners * skipRatio);
+        
+        // Send the new skip message with updated skip information
+        event.getChannel().sendMessage("🎶 Skipped **"+handler.getPlayer().getPlayingTrack().getInfo().title+"**") // Replace with your skip message content
+                .queue(msg -> {
+                    msg.addReaction("⏭️").queue();
+                });
+                handler.getPlayer().stopTrack();
+    }
+
+    
+
     // make sure people aren't adding clones to dbots
     private void credit(JDA jda)
     {

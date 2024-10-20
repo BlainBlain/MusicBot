@@ -53,12 +53,5 @@ body:
           required: true
         - label: I have searched for similar issues [on the issues page](https://github.com/jagrosh/MusicBot/issues?q=is%3Aissue)
           required: true
-        - label: I am using an official release from [the releases page](https://github.com/jagrosh/MusicBot/releases)
+        - label: "I am running the latest version of the bot: ![Release](https://img.shields.io/github/release/jagrosh/MusicBot.svg)"
           required: true
-  - type: input
-    id: version
-    attributes:
-      label: JMusicBot Version
-      description: Which version of JMusicBot are you running?
-    validations:
-      required: true

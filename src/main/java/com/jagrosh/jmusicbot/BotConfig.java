@@ -16,8 +16,8 @@
 package com.jagrosh.jmusicbot;
 
 import com.jagrosh.jmusicbot.entities.Prompt;
+import com.jagrosh.jmusicbot.utils.FormatUtil;
 import com.jagrosh.jmusicbot.utils.OtherUtil;
-import com.jagrosh.jmusicbot.utils.TimeUtil;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.typesafe.config.*;
 import java.io.IOException;
@@ -40,11 +40,10 @@ public class BotConfig
     
     private Path path = null;
     private String token, prefix, altprefix, helpWord, playlistsFolder, logLevel,
-            successEmoji, warningEmoji, errorEmoji, loadingEmoji, searchingEmoji,
-            evalEngine;
-    private boolean stayInChannel, songInGame, npImages, updatealerts, useEval, dbots;
+            successEmoji, warningEmoji, errorEmoji, loadingEmoji, searchingEmoji, evalEngine;
+    private boolean stayInChannel, deafen, topicupdate, songInGame, npImages, updatealerts, useEval, dbots;
     private long owner, maxSeconds, aloneTimeUntilStop;
-    private int maxYTPlaylistPages;
+	private int maxYTPlaylistPages;
     private double skipratio;
     private OnlineStatus status;
     private Activity game;
@@ -85,14 +84,16 @@ public class BotConfig
             game = OtherUtil.parseGame(config.getString("game"));
             status = OtherUtil.parseStatus(config.getString("status"));
             stayInChannel = config.getBoolean("stayinchannel");
+			deafen = config.getBoolean("deafen");
+            topicupdate = config.getBoolean("topicupdate");
             songInGame = config.getBoolean("songinstatus");
             npImages = config.getBoolean("npimages");
             updatealerts = config.getBoolean("updatealerts");
-            logLevel = config.getString("loglevel");
+			logLevel = config.getString("loglevel");
             useEval = config.getBoolean("eval");
-            evalEngine = config.getString("evalengine");
+			evalEngine = config.getString("evalengine");
             maxSeconds = config.getLong("maxtime");
-            maxYTPlaylistPages = config.getInt("maxytplaylistpages");
+			maxYTPlaylistPages = config.getInt("maxytplaylistpages");
             aloneTimeUntilStop = config.getLong("alonetimeuntilstop");
             playlistsFolder = config.getString("playlistsfolder");
             aliases = config.getConfig("aliases");
@@ -298,6 +299,16 @@ public class BotConfig
         return stayInChannel;
     }
     
+	public boolean getDeafen()
+    {
+        return deafen;
+    }
+	
+    public boolean getTopicUpdate()
+    {
+        return topicupdate;
+    }
+
     public boolean getSongInStatus()
     {
         return songInGame;
@@ -317,18 +328,18 @@ public class BotConfig
     {
         return updatealerts;
     }
-
-    public String getLogLevel()
+	
+	public String getLogLevel()
     {
         return logLevel;
     }
-
+    
     public boolean useEval()
     {
         return useEval;
     }
-    
-    public String getEvalEngine()
+	
+	public String getEvalEngine()
     {
         return evalEngine;
     }
@@ -342,15 +353,15 @@ public class BotConfig
     {
         return maxSeconds;
     }
-    
-    public int getMaxYTPlaylistPages()
+	
+	public int getMaxYTPlaylistPages()
     {
         return maxYTPlaylistPages;
     }
     
     public String getMaxTime()
     {
-        return TimeUtil.formatTime(maxSeconds * 1000);
+        return FormatUtil.formatTime(maxSeconds * 1000);
     }
 
     public long getAloneTimeUntilStop()

@@ -49,7 +49,9 @@ public class SkipCmd extends MusicCommand
         }
         if(event.getAuthor().getIdLong() == rm.getOwner() || skipRatio == 0)
         {
-            event.reply(event.getClient().getSuccess()+" Skipped **"+handler.getPlayer().getPlayingTrack().getInfo().title+"**");
+            event.reply(event.getClient().getSuccess()+" Skipped **"+handler.getPlayer().getPlayingTrack().getInfo().title+"**", msg -> {
+                msg.addReaction("⏭️").queue(); // Skip reaction
+            });
             handler.getPlayer().stopTrack();
         }
         else
