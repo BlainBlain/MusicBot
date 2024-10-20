@@ -41,7 +41,7 @@ public class BotConfig
     private Path path = null;
     private String token, prefix, altprefix, helpWord, playlistsFolder, logLevel,
             successEmoji, warningEmoji, errorEmoji, loadingEmoji, searchingEmoji, evalEngine;
-    private boolean stayInChannel, deafen, topicupdate, songInGame, npImages, updatealerts, useEval, dbots;
+    private boolean youtubeOauth2, stayInChannel, deafen, topicupdate, songInGame, npImages, updatealerts, useEval, dbots;
     private long owner, maxSeconds, aloneTimeUntilStop;
 	private int maxYTPlaylistPages;
     private double skipratio;
@@ -83,6 +83,7 @@ public class BotConfig
             searchingEmoji = config.getString("searching");
             game = OtherUtil.parseGame(config.getString("game"));
             status = OtherUtil.parseStatus(config.getString("status"));
+			youtubeOauth2 = config.getBoolean("youtubeoauth2");
             stayInChannel = config.getBoolean("stayinchannel");
 			deafen = config.getBoolean("deafen");
             topicupdate = config.getBoolean("topicupdate");
@@ -292,6 +293,11 @@ public class BotConfig
     public String getHelp()
     {
         return helpWord;
+    }
+	
+	public boolean useYoutubeOauth2()
+    {
+        return youtubeOauth2;
     }
     
     public boolean getStay()
