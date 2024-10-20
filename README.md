@@ -58,8 +58,7 @@ JMusicBot supports all sources and formats supported by [lavaplayer](https://git
 
 ## Example
 ![Loading Example...](https://i.imgur.com/kVtTKvS.gif)
-
-[![Watch the video](https://img.youtube.com/vi/JzVter9CFS4/0.jpg)](https://www.youtube.com/watch?v=JzVter9CFS4)
+![Loading Example...](https://i.imgur.com/a/0VCEkn5.gif)
 
 ## Setup
 Please see the [Setup Page](https://jmusicbot.com/setup) to run this bot yourself!
