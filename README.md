@@ -61,6 +61,7 @@ JMusicBot supports all sources and formats supported by [lavaplayer](https://git
 
 ## Setup
 Please see the [Setup Page](https://jmusicbot.com/setup) to run this bot yourself!
+
 **For Manual Building with Forked Features to work:**
 Navigate to the directory containing the `pom.xml file` and execute the command `mvn clean install`.
 
