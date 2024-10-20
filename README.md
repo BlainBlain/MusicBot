@@ -25,8 +25,8 @@ A cross-platform Discord music bot with a clean interface, and that is easy to s
   * Supports local files
   * Playlist support (both web/youtube, and local)
   * **New Features in Fork**:
-    * Added `!seek` and `!seekto` commands:
-      - `!seek 1h2m` to add or decrease time (use a negative number for reduction, e.g., `!seek -2h`).
+    * Added `!seek` and `!seekto` commands (format 00h00m00s):
+      - `!seek` to add or decrease time (use a negative number for reduction, e.g., `!seek -2h`).
       - `!seekto` to jump straight to a specific timestamp.
     * Merged pull requests from:
       - **Tommy-Davies**: Sponsorblock integration.
