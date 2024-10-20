@@ -25,7 +25,7 @@ A cross-platform Discord music bot with a clean interface, and that is easy to s
   * Supports local files
   * Playlist support (both web/youtube, and local)
   * **New Features in Fork**:
-    * Added `!seek` and `!seekto` commands (format 00h00m00s):
+    * Added `!seek` and `!seekto` commands (format `00h00m00s`):
       - `!seek` to add or decrease time (use a negative number for reduction, e.g., `!seek -2h`).
       - `!seekto` to jump straight to a specific timestamp.
     * Merged pull requests from:
@@ -33,7 +33,7 @@ A cross-platform Discord music bot with a clean interface, and that is easy to s
       - **Woife5**: Minimize-to-Tray functionality.
       - **MichailiK**: Config option to deafen or not.
     * Improved formatting for lyrics to display line by line for better readability.
-    * Implemented a react function for skip and volume commands, allowing private usage only (please note this may allow unintended access to others).
+    * Implemented a react function for skip and volume commands allowing for easier skipping and volume changing (NOTE: As this is a bad implementation, The bot should be used privately as anyone can react to the command).
     * Added a config option to prevent the bot from updating the channel topic.
 
 ## Supported sources and formats
