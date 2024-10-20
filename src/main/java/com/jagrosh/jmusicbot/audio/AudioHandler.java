@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 package com.jagrosh.jmusicbot.audio;
-
+import com.jagrosh.jmusicbot.JMusicBot;
 import com.jagrosh.jmusicbot.playlist.PlaylistLoader.Playlist;
 import com.jagrosh.jmusicbot.queue.AbstractQueue;
 import com.jagrosh.jmusicbot.settings.QueueType;
-import com.jagrosh.jmusicbot.utils.TimeUtil;
 import com.jagrosh.jmusicbot.settings.RepeatMode;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
@@ -53,8 +52,8 @@ public class AudioHandler extends AudioEventAdapter implements AudioSendHandler
     public final static String PLAY_EMOJI  = "\u25B6"; // ▶
     public final static String PAUSE_EMOJI = "\u23F8"; // ⏸
     public final static String STOP_EMOJI  = "\u23F9"; // ⏹
-
-    private final static Logger LOGGER = LoggerFactory.getLogger(AudioHandler.class);
+	
+	private final static Logger LOGGER = LoggerFactory.getLogger(AudioHandler.class);
 
     private final List<AudioTrack> defaultQueue = new LinkedList<>();
     private final Set<String> votes = new HashSet<>();
@@ -188,7 +187,7 @@ public class AudioHandler extends AudioEventAdapter implements AudioSendHandler
         {
             if(!playFromDefault())
             {
-                manager.getBot().getNowplayingHandler().onTrackUpdate(null);
+                manager.getBot().getNowplayingHandler().onTrackUpdate(guildId, null, this);
                 if(!manager.getBot().getConfig().getStay())
                     manager.getBot().closeAudioConnection(guildId);
                 // unpause, in the case when the player was paused and the track has been skipped.
@@ -202,8 +201,8 @@ public class AudioHandler extends AudioEventAdapter implements AudioSendHandler
             player.playTrack(qt.getTrack());
         }
     }
-
-    @Override
+	
+	@Override
     public void onTrackException(AudioPlayer player, AudioTrack track, FriendlyException exception)
     {
         if (
@@ -219,12 +218,12 @@ public class AudioHandler extends AudioEventAdapter implements AudioSendHandler
         else
             LOGGER.error("Track {} has failed to play", track.getIdentifier(), exception);
     }
-
+	
     @Override
     public void onTrackStart(AudioPlayer player, AudioTrack track) 
     {
         votes.clear();
-        manager.getBot().getNowplayingHandler().onTrackUpdate(track);
+        manager.getBot().getNowplayingHandler().onTrackUpdate(guildId, track, this);
     }
 
     
@@ -269,7 +268,7 @@ public class AudioHandler extends AudioEventAdapter implements AudioSendHandler
             double progress = (double)audioPlayer.getPlayingTrack().getPosition()/track.getDuration();
             eb.setDescription(getStatusEmoji()
                     + " "+FormatUtil.progressBar(progress)
-                    + " `[" + TimeUtil.formatTime(track.getPosition()) + "/" + TimeUtil.formatTime(track.getDuration()) + "]` "
+                    + " `[" + FormatUtil.formatTime(track.getPosition()) + "/" + FormatUtil.formatTime(track.getDuration()) + "]` "
                     + FormatUtil.volumeIcon(audioPlayer.getVolume()));
             
             return mb.setEmbeds(eb.build()).build();
@@ -287,6 +286,23 @@ public class AudioHandler extends AudioEventAdapter implements AudioSendHandler
                 .setDescription(STOP_EMOJI+" "+FormatUtil.progressBar(-1)+" "+FormatUtil.volumeIcon(audioPlayer.getVolume()))
                 .setColor(guild.getSelfMember().getColor())
                 .build()).build();
+    }
+
+	public String getTopicFormat(JDA jda)
+    {
+        if(isMusicPlaying(jda))
+        {
+            long userid = getRequestMetadata().getOwner();
+            AudioTrack track = audioPlayer.getPlayingTrack();
+            String title = track.getInfo().title;
+            if(title==null || title.equals("Unknown Title"))
+                title = track.getInfo().uri;
+            return "**"+title+"** ["+(userid==0 ? "autoplay" : "<@"+userid+">")+"]"
+                    + "\n" + getStatusEmoji() + " "
+                    + "[" + FormatUtil.formatTime(track.getDuration()) + "] "
+                    + FormatUtil.volumeIcon(audioPlayer.getVolume());
+        }
+        else return "No music playing " + STOP_EMOJI + " " + FormatUtil.volumeIcon(audioPlayer.getVolume());
     }
 
     public String getStatusEmoji()
