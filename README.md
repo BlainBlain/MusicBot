@@ -1,5 +1,4 @@
 <img align="right" src="https://i.imgur.com/zrE80HY.png" height="200" width="200">
-
 # JMusicBot
 
 [![Downloads](https://img.shields.io/github/downloads/jagrosh/MusicBot/total.svg)](https://github.com/jagrosh/MusicBot/releases/latest)
@@ -22,10 +21,22 @@ A cross-platform Discord music bot with a clean interface, and that is easy to s
   * Smooth playback
   * Server-specific setup for the "DJ" role that can moderate the music
   * Clean and beautiful menus
-  * Supports many sites, including Youtube, Soundcloud, and more
+  * Supports many sites, including YouTube, SoundCloud, and more
   * Supports many online radio/streams
   * Supports local files
   * Playlist support (both web/youtube, and local)
+  * **New Features in Fork**:
+    * Added `!seek` and `!seekto` commands (format `00h00m00s`):
+      - `!seek` to add or decrease time (use a negative number for reduction, e.g., `!seek -2h`).
+      - `!seekto` to jump straight to a specific timestamp.
+    * Merged pull requests from:
+      - **Tommy-Davies**: Sponsorblock integration.
+      - **Woife5**: Minimize-to-Tray functionality.
+      - **MichailiK**: Config option to deafen or not, and Youtube oAuth for music errors.
+    * Improved formatting for lyrics to display line by line for better readability.
+    * Implemented a react function for skip and volume commands allowing for easier skipping and volume changing.
+    * **New**: Added permissions so that only Users with Admin and/or DJ rights, and also those only in the voice channel with the bot can use the reactions for skip and volume commands.
+    * Added a config option to prevent the bot from updating the channel topic.
 
 ## Supported sources and formats
 JMusicBot supports all sources and formats supported by [lavaplayer](https://github.com/sedmelluq/lavaplayer#supported-formats):
@@ -49,9 +60,19 @@ JMusicBot supports all sources and formats supported by [lavaplayer](https://git
 
 ## Example
 ![Loading Example...](https://i.imgur.com/kVtTKvS.gif)
+![Loading Example...](https://i.imgur.com/0pJJrp7.gif)
 
 ## Setup
 Please see the [Setup Page](https://jmusicbot.com/setup) to run this bot yourself!
+
+**For Manual Building with Forked Features to work:**
+Navigate to the directory containing the `pom.xml file` and execute the command `mvn clean install`.
+
+**Add PO Token Generator:**
+To enable YouTube functionality with PO tokens, users can follow these steps:
+1. Clone the repository from [youtube-trusted-session-generator](https://github.com/iv-org/youtube-trusted-session-generator).
+2. Run `python potoken-generator.py` in the terminal.
+3. Grab the PO token and Visitor data and paste the string into the config file.
 
 ## Questions/Suggestions/Bug Reports
 **Please read the [Issues List](https://github.com/jagrosh/MusicBot/issues) before suggesting a feature**. If you have a question, need troubleshooting help, or want to brainstorm a new feature, please start a [Discussion](https://github.com/jagrosh/MusicBot/discussions). If you'd like to suggest a feature or report a reproducible bug, please open an [Issue](https://github.com/jagrosh/MusicBot/issues) on this repository. If you like this bot, be sure to add a star to the libraries that make this possible: [**JDA**](https://github.com/DV8FromTheWorld/JDA) and [**lavaplayer**](https://github.com/sedmelluq/lavaplayer)!
