@@ -17,11 +17,13 @@ package com.jagrosh.jmusicbot;
 
 import com.jagrosh.jmusicbot.utils.OtherUtil;
 import com.jagrosh.jmusicbot.commands.dj.VolumeCmd;
+
+import net.dv8tion.jda.api.entities.Member;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-import com.jagrosh.jmusicbot.utils.YoutubeOauth2TokenHandler;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.PrivateChannel;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.dv8tion.jda.api.events.ReadyEvent;
@@ -36,10 +38,15 @@ import org.slf4j.LoggerFactory;
 // This one below I added
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.entities.MessageReaction;
-import com.jagrosh.jdautilities.command.CommandEvent;
 import com.jagrosh.jmusicbot.audio.AudioHandler;
+import com.jagrosh.jmusicbot.audio.RequestMetadata;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
-
+import com.jagrosh.jmusicbot.settings.Settings;
+import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Role;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -49,12 +56,13 @@ import com.jagrosh.jmusicbot.utils.FormatUtil;
 public class Listener extends ListenerAdapter
 {
     private final Bot bot;
+    private final Map<String, Long> lastVolumeChange = new ConcurrentHashMap<>();
     
     public Listener(Bot bot)
     {
         this.bot = bot;
     }
-    
+
     @Override
     public void onReady(ReadyEvent event) 
     {
@@ -96,22 +104,6 @@ public class Listener extends ListenerAdapter
                 catch(Exception ignored) {} // ignored
             }, 0, 24, TimeUnit.HOURS);
         }
-		        if (bot.getConfig().useYoutubeOauth2())
-        {
-            YoutubeOauth2TokenHandler.Data data = bot.getYouTubeOauth2Handler().getData();
-            if (data != null)
-            {
-                PrivateChannel channel = bot.getJDA().openPrivateChannelById(bot.getConfig().getOwnerId()).complete();
-                channel
-                   .sendMessage(
-                       "# DO NOT AUTHORISE THIS WITH YOUR MAIN GOOGLE ACCOUNT!!!\n"
-                       + "## Create or use an alternative/burner Google account!\n"
-                       + "To give JMusicBot access to your Google account, go to "
-                       + data.getAuthorisationUrl()
-                       + " and enter the code **" + data.getCode() + "**")
-                   .queue();
-            }
-        }
     }
     
     @Override
@@ -139,71 +131,151 @@ public class Listener extends ListenerAdapter
     }
     
     @Override
-    public void onMessageReactionAdd(MessageReactionAddEvent event) {
-        if (!event.getUser().isBot()) {
-            MessageReaction.ReactionEmote emote = event.getReaction().getReactionEmote();
-            if (emote.isEmoji()) {
-                String emoji = emote.getEmoji();
-                if (emoji.equals("🔊")) {
-                    // Handle volume up
-                    VolumeCmd.volumeUp(bot, event.getGuild().getId());
-                    handleVolumeChange(event);
-                } else if (emoji.equals("🔉")) {
-                    // Handle volume down
-                    VolumeCmd.volumeDown(bot, event.getGuild().getId());
-                    handleVolumeChange(event);
-                }
-                else if ("⏭️".equals(emoji)) {
-                    handleSkipReaction(event);
-                }
-            }
+    public void onMessageReactionAdd(@NotNull MessageReactionAddEvent event) {
+        if (event.getUser().isBot()) {
+            return;
         }
+
+        event.getChannel().retrieveMessageById(event.getMessageId()).queue(message -> {
+            if (!message.getAuthor().equals(bot.getJDA().getSelfUser())) {
+                return;
+            }
+
+            MessageReaction.ReactionEmote emote = event.getReaction().getReactionEmote();
+            if (!emote.isEmoji()) {
+                return;
+            }
+
+            String emoji = emote.getEmoji();
+            User user = event.getUser();
+            Guild guild = event.getGuild();
+
+            if (!isInSameVoiceChannel(user, guild)) {
+                event.getChannel().sendMessage(user.getAsMention() + " You must be in the same voice channel as the bot to use this reaction.").queue();
+                return;
+            }
+
+            if (!hasPermission(user, guild)) {
+                event.getChannel().sendMessage(user.getAsMention() + " You don't have permission to use this reaction. If you're trying to skip, use !skip to cast your vote.").queue();
+                return;
+            }
+
+            switch (emoji) {
+                case "🔊":
+                    message.delete().queue();
+                    handleVolumeChange(event, true);
+                    break;
+                case "🔉":
+                    message.delete().queue();
+                    handleVolumeChange(event, false);
+                    break;
+                case "⏭️":
+                    message.delete().queue();
+                    handleSkipReaction(event);
+                    break;
+            }
+        });
     }
 
-    private void handleVolumeChange(MessageReactionAddEvent event) {
-        event.getChannel().retrieveMessageById(event.getMessageId()).queue(message -> {
-            message.delete().queue();
-            // Re-add the new current volume message
-            AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
+    private void handleVolumeChange(MessageReactionAddEvent event, boolean increase) {
+        String userId = event.getUser().getId();
+        long currentTime = System.currentTimeMillis();
+
+        if (lastVolumeChange.containsKey(userId) && currentTime - lastVolumeChange.get(userId) < 2000) {
+            event.getChannel().sendMessage("Please wait a moment before changing the volume again.").queue();
+            return;
+        }
+
+        lastVolumeChange.put(userId, currentTime);
+
+        if (increase) {
+            VolumeCmd.volumeUp(bot, event.getGuild().getId());
+        } else {
+            VolumeCmd.volumeDown(bot, event.getGuild().getId());
+        }
+
+        AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
+        if (handler != null) {
             int volume = handler.getPlayer().getVolume();
-            event.getChannel().sendMessage(FormatUtil.volumeIcon(volume) + " Current volume is `" + volume + "`")
-                    .queue(msg -> {
-                        msg.addReaction("🔉").queue(); // Volume down reaction
-                        msg.addReaction("🔊").queue(); // Volume up reaction
-                    });
-        });
+            event.getChannel().sendMessage(FormatUtil.volumeIcon(volume) + " Current volume is `" + volume + "`").queue(msg -> {
+                msg.addReaction("🔉").queue();
+                msg.addReaction("🔊").queue();
+            });
+        }
+
+        deleteMessagesWithSameReaction(event, increase ? "🔊" : "🔉");
     }
 
     private void handleSkipReaction(MessageReactionAddEvent event) {
-        event.getChannel().retrieveMessageById(event.getMessageId()).queue(message -> {
-            message.delete().queue();
-        });
-
-        // Re-add the new skip message with updated information
         AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
-        if (handler == null) return;
-
-        int listeners = (int) event.getGuild().getAudioManager().getConnectedChannel().getMembers().stream()
-                .filter(m -> !m.getUser().isBot() && !m.getVoiceState().isDeafened()).count();
-        double skipRatio = bot.getSettingsManager().getSettings(event.getGuild()).getSkipRatio();
-        if (skipRatio == -1) {
-            skipRatio = bot.getConfig().getSkipRatio();
+        if (handler == null) {
+            return;
         }
 
-        int skippers = (int) event.getGuild().getAudioManager().getConnectedChannel().getMembers().stream()
-                .filter(m -> handler.getVotes().contains(m.getUser().getId())).count();
-        int required = (int) Math.ceil(listeners * skipRatio);
-        
-        // Send the new skip message with updated skip information
-        event.getChannel().sendMessage("🎶 Skipped **"+handler.getPlayer().getPlayingTrack().getInfo().title+"**") // Replace with your skip message content
-                .queue(msg -> {
-                    msg.addReaction("⏭️").queue();
-                });
-                handler.getPlayer().stopTrack();
+        RequestMetadata rm = handler.getRequestMetadata();
+        String requestedBy = (rm != null && rm.user != null)
+                ? "(requested by **" + FormatUtil.formatUsername(rm.user) + "**)"
+                : "(autoplay)";
+
+        String skipMessage = "🎶 **" + FormatUtil.formatUsername(event.getUser()).substring(0, 1).toUpperCase() 
+                + FormatUtil.formatUsername(event.getUser()).substring(1) + "** skipped **"
+                + handler.getPlayer().getPlayingTrack().getInfo().title + "** " + requestedBy;
+
+        handler.getPlayer().stopTrack();
+        event.getChannel().sendMessage(skipMessage).queue(msg -> {
+            msg.addReaction("⏭️").queue();
+        });
+
+        deleteMessagesWithSameReaction(event, "⏭️");
     }
 
-    
+    private boolean isInSameVoiceChannel(User user, Guild guild) {
+        Member member = guild.getMember(user);
+        if (member == null) {
+            return false;
+        }
 
+        VoiceChannel botChannel = guild.getSelfMember().getVoiceState().getChannel();
+        VoiceChannel userChannel = member.getVoiceState().getChannel();
+        return botChannel != null && botChannel.equals(userChannel);
+    }
+
+    private boolean hasPermission(User user, Guild guild) {
+        Member member = guild.getMember(user);
+        if (member == null) {
+            return false;
+        }
+
+        if (user.getId().equals(guild.getOwnerId()) || member.hasPermission(Permission.MANAGE_SERVER)) {
+            return true;
+        }
+
+        Settings settings = bot.getSettingsManager().getSettings(guild);
+        Role djRole = settings.getRole(guild);
+        return djRole != null && member.getRoles().contains(djRole);
+    }
+
+    private void deleteMessagesWithSameReaction(MessageReactionAddEvent event, String emoji) {
+        TextChannel channel = event.getTextChannel();
+        String messageId = event.getMessageId();
+    
+        channel.getHistory().retrievePast(5).queue(messages -> {
+            boolean deletedOriginal = false;
+    
+            for (Message message : messages) {
+                if (message.getId().equals(messageId) && !deletedOriginal) {
+                    deletedOriginal = true;
+                    continue;
+                }
+ 
+                if (message.getReactions().stream()
+                        .anyMatch(reaction -> reaction.getReactionEmote().isEmoji() && reaction.getReactionEmote().getEmoji().equals(emoji))) {
+                    message.delete().queue();
+                }
+            }
+        });
+    }    
+       
     // make sure people aren't adding clones to dbots
     private void credit(JDA jda)
     {

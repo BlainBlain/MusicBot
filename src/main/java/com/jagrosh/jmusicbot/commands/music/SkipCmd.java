@@ -21,6 +21,7 @@ import com.jagrosh.jmusicbot.audio.AudioHandler;
 import com.jagrosh.jmusicbot.audio.RequestMetadata;
 import com.jagrosh.jmusicbot.commands.MusicCommand;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
+import net.dv8tion.jda.api.entities.User;
 
 /**
  *
@@ -44,16 +45,27 @@ public class SkipCmd extends MusicCommand
         AudioHandler handler = (AudioHandler)event.getGuild().getAudioManager().getSendingHandler();
         RequestMetadata rm = handler.getRequestMetadata();
         double skipRatio = bot.getSettingsManager().getSettings(event.getGuild()).getSkipRatio();
+        User user = event.getAuthor();
         if(skipRatio == -1) {
           skipRatio = bot.getConfig().getSkipRatio();
         }
-        if(event.getAuthor().getIdLong() == rm.getOwner() || skipRatio == 0)
+        if (event.getAuthor().getIdLong() == rm.getOwner() || skipRatio == 0) 
         {
-            event.reply(event.getClient().getSuccess()+" Skipped **"+handler.getPlayer().getPlayingTrack().getInfo().title+"**", msg -> {
-                msg.addReaction("⏭️").queue(); // Skip reaction
-            });
+            String requestedBy = (rm.getOwner() == 0L) 
+                ? "(autoplay)" 
+                : "(requested by **" + FormatUtil.formatUsername(rm.user) + "**)";
+                
+                String skipMessage = event.getClient().getSuccess() + " Skipped **"
+                            + handler.getPlayer().getPlayingTrack().getInfo().title + "** " + requestedBy;                
+
+            // Send the new skip message with updated skip information
+            event.getChannel().sendMessage(skipMessage)
+                    .queue(msg -> {
+                        msg.addReaction("⏭️").queue();
+                    });
+                
             handler.getPlayer().stopTrack();
-        }
+        }        
         else
         {
             int listeners = (int)event.getSelfMember().getVoiceState().getChannel().getMembers().stream()

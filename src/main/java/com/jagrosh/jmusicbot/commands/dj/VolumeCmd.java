@@ -21,9 +21,6 @@ import com.jagrosh.jmusicbot.audio.AudioHandler;
 import com.jagrosh.jmusicbot.commands.DJCommand;
 import com.jagrosh.jmusicbot.settings.Settings;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
-import net.dv8tion.jda.api.entities.MessageReaction;
-import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
-import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 public class VolumeCmd extends DJCommand {
     public VolumeCmd(Bot bot) {
@@ -37,7 +34,7 @@ public class VolumeCmd extends DJCommand {
     @Override
     public void doCommand(CommandEvent event) {
         if (event.getArgs().isEmpty()) {
-            // If no argument is provided, show current volume and add reaction buttons
+            // If no number is provided, show current volume and add reaction buttons
             showCurrentVolume(event);
         } else {
             adjustVolume(event);

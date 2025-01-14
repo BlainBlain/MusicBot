@@ -17,7 +17,8 @@ package com.jagrosh.jmusicbot.audio;
 
 import com.dunctebot.sourcemanagers.DuncteBotSources;
 import com.jagrosh.jmusicbot.Bot;
-import com.jagrosh.jmusicbot.utils.OtherUtil;
+import com.jagrosh.jmusicbot.BotConfig;
+import com.jagrosh.jmusicbot.utils.YouTubeUtil;
 import com.sedmelluq.discord.lavaplayer.container.MediaContainerRegistry;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
@@ -30,13 +31,16 @@ import com.sedmelluq.discord.lavaplayer.source.nico.NicoAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.soundcloud.SoundCloudAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.twitch.TwitchStreamAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.vimeo.VimeoAudioSourceManager;
+import com.sedmelluq.lava.extensions.youtuberotator.YoutubeIpRotatorSetup;
+import com.sedmelluq.lava.extensions.youtuberotator.planner.AbstractRoutePlanner;
+import com.sedmelluq.lava.extensions.youtuberotator.planner.BalancingIpRoutePlanner;
+import com.sedmelluq.lava.extensions.youtuberotator.planner.NanoIpRoutePlanner;
+import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.IpBlock;
+import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.Ipv4Block;
+import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.Ipv6Block;
 import dev.lavalink.youtube.YoutubeAudioSourceManager;
+import dev.lavalink.youtube.clients.Web;
 import net.dv8tion.jda.api.entities.Guild;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 
 /**
  *
@@ -44,19 +48,34 @@ import java.nio.file.NoSuchFileException;
  */
 public class PlayerManager extends DefaultAudioPlayerManager
 {
-    private final static Logger LOGGER = LoggerFactory.getLogger(PlayerManager.class);
     private final Bot bot;
-    
-    public PlayerManager(Bot bot)
+    private final BotConfig config;
+
+    public PlayerManager(Bot bot, BotConfig config)
     {
         this.bot = bot;
+        this.config = config;
     }
     
     public void init()
     {
         TransformativeAudioSourceManager.createTransforms(bot.getConfig().getTransforms()).forEach(t -> registerSourceManager(t));
 
-        YoutubeAudioSourceManager yt = setupYoutubeAudioSourceManager();
+        if (config.getYTPoToken() != null && config.getYTVisitorData() != null)
+            Web.setPoTokenAndVisitorData(config.getYTPoToken(), config.getYTVisitorData());
+        
+        YoutubeAudioSourceManager yt = new YoutubeAudioSourceManager(true);
+        if (config.getYTRoutingPlanner() != YouTubeUtil.RoutingPlanner.NONE)
+        {
+            AbstractRoutePlanner routePlanner = YouTubeUtil.createRouterPlanner(config.getYTRoutingPlanner(), config.getYTIpBlocks());
+            YoutubeIpRotatorSetup rotator = new YoutubeIpRotatorSetup(routePlanner);
+            
+            rotator.forConfiguration(yt.getHttpInterfaceManager(), false)
+                    .withMainDelegateFilter(yt.getContextFilter())
+                    .setup();
+        }
+
+        yt.setPlaylistPageCount(bot.getConfig().getMaxYTPlaylistPages());
         registerSourceManager(yt);
 
         registerSourceManager(SoundCloudAudioSourceManager.createDefault());
@@ -72,42 +91,7 @@ public class PlayerManager extends DefaultAudioPlayerManager
 
         DuncteBotSources.registerAll(this, "en-US");
     }
-
-    private YoutubeAudioSourceManager setupYoutubeAudioSourceManager()
-    {
-        YoutubeAudioSourceManager yt = new YoutubeAudioSourceManager(true);
-        yt.setPlaylistPageCount(bot.getConfig().getMaxYTPlaylistPages());
-
-        // OAuth2 setup
-        if (bot.getConfig().useYoutubeOauth2())
-        {
-            String token = null;
-            try
-            {
-                token = Files.readString(OtherUtil.getPath("youtubetoken.txt"));
-            }
-            catch (NoSuchFileException e)
-            {
-                /* ignored */
-            }
-            catch (IOException e)
-            {
-                LOGGER.warn("Failed to read YouTube OAuth2 token file: {}", e.getMessage());
-                return yt;
-            }
-            LOGGER.debug("Read YouTube OAuth2 refresh token from youtubetoken.txt");
-            try
-            {
-                yt.useOauth2(token, false);
-            }
-            catch (Exception e)
-            {
-                LOGGER.warn("Failed to authorise with YouTube. If this issue persists, delete the youtubetoken.txt file to reauthorise.", e);
-            }
-        }
-        return yt;
-    }
-
+    
     public Bot getBot()
     {
         return bot;

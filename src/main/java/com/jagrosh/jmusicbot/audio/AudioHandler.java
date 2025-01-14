@@ -21,7 +21,6 @@ import com.jagrosh.jmusicbot.settings.QueueType;
 import com.jagrosh.jmusicbot.settings.RepeatMode;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
-import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import com.sedmelluq.discord.lavaplayer.track.playback.AudioFrame;
@@ -40,8 +39,6 @@ import net.dv8tion.jda.api.audio.AudioSendHandler;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -52,8 +49,6 @@ public class AudioHandler extends AudioEventAdapter implements AudioSendHandler
     public final static String PLAY_EMOJI  = "\u25B6"; // ▶
     public final static String PAUSE_EMOJI = "\u23F8"; // ⏸
     public final static String STOP_EMOJI  = "\u23F9"; // ⏹
-	
-	private final static Logger LOGGER = LoggerFactory.getLogger(AudioHandler.class);
 
     private final List<AudioTrack> defaultQueue = new LinkedList<>();
     private final Set<String> votes = new HashSet<>();
@@ -201,24 +196,7 @@ public class AudioHandler extends AudioEventAdapter implements AudioSendHandler
             player.playTrack(qt.getTrack());
         }
     }
-	
-	@Override
-    public void onTrackException(AudioPlayer player, AudioTrack track, FriendlyException exception)
-    {
-        if (
-            exception.getMessage().equals("Sign in to confirm you're not a bot")
-            || exception.getMessage().equals("Please sign in")
-        )
-            LOGGER.error(
-                "Track {} has failed to play: {}"
-                + "You will need to sign in to Google to play YouTube tracks. More info: https://jmusicbot.com/youtube-oauth2",
-                track.getIdentifier(),
-                exception.getMessage()
-            );
-        else
-            LOGGER.error("Track {} has failed to play", track.getIdentifier(), exception);
-    }
-	
+
     @Override
     public void onTrackStart(AudioPlayer player, AudioTrack track) 
     {

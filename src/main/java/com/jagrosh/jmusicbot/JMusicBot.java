@@ -200,7 +200,6 @@ public class JMusicBot
                         new SearchCmd(bot),
                         new SCSearchCmd(bot),
                         new SeekCmd(bot),
-						new SeekToCmd(bot),
                         new ShuffleCmd(bot),
                         new SkipCmd(bot),
 						new skipSegCmd(bot),
