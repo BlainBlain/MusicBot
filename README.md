@@ -69,7 +69,7 @@ Please see the [Setup Page](https://jmusicbot.com/setup) to run this bot yoursel
 Navigate to the directory containing the `pom.xml file` and execute the command `mvn clean install`.
 
 **Add PO Token Generator:**
-To enable YouTube functionality with PO tokens, users can follow these steps:
+To setup the PO Token for the bot to not be flagged by YouTube:
 1. Clone the repository from [youtube-trusted-session-generator](https://github.com/iv-org/youtube-trusted-session-generator).
 2. Run `python potoken-generator.py` in the terminal.
 3. Grab the PO token and Visitor data and paste the string into the config file.
