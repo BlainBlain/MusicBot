@@ -17,7 +17,7 @@ public class LyricsCmd extends MusicCommand {
         this.arguments = "[song name]";
         this.help = "shows the lyrics of a song";
         this.aliases = bot.getConfig().getAliases(this.name);
-        this.botPermissions = new Permission[]{Permission.MESSAGE_WRITE, Permission.MESSAGE_EMBED_LINKS};
+        this.botPermissions = new Permission[]{Permission.MESSAGE_SEND, Permission.MESSAGE_EMBED_LINKS};
     }
 
     @Override

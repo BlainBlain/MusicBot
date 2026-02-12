@@ -21,6 +21,7 @@ import com.jagrosh.jmusicbot.audio.AudioHandler;
 import com.jagrosh.jmusicbot.commands.DJCommand;
 import com.jagrosh.jmusicbot.settings.Settings;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 
 public class VolumeCmd extends DJCommand {
     public VolumeCmd(Bot bot) {
@@ -46,8 +47,8 @@ public class VolumeCmd extends DJCommand {
         int volume = handler.getPlayer().getVolume();
         event.reply(FormatUtil.volumeIcon(volume) + " Current volume is `" + volume + "`",
                 msg -> {
-                    msg.addReaction("🔉").queue(); // Volume down reaction
-                    msg.addReaction("🔊").queue(); // Volume up reaction
+                    msg.addReaction(Emoji.fromUnicode("🔉")).queue();
+                    msg.addReaction(Emoji.fromUnicode("🔊")).queue();
                 });
     }
 
@@ -74,22 +75,22 @@ public class VolumeCmd extends DJCommand {
         settings.setVolume(newVolume);
         event.reply(FormatUtil.volumeIcon(newVolume) + " Volume changed from `" + oldVolume + "` to `" + newVolume + "`",
         msg -> {
-            msg.addReaction("🔉").queue(); // Volume down reaction
-            msg.addReaction("🔊").queue(); // Volume up reaction
+            msg.addReaction(Emoji.fromUnicode("🔉")).queue();
+            msg.addReaction(Emoji.fromUnicode("🔊")).queue();
         });
     }
 
     public static void volumeUp(Bot bot, String guildId) {
         AudioHandler handler = (AudioHandler) bot.getJDA().getGuildById(guildId).getAudioManager().getSendingHandler();
         int volume = handler.getPlayer().getVolume();
-        int newVolume = Math.min(150, volume + 2); // Increase volume by 2
+        int newVolume = Math.min(150, volume + 2);
         handler.getPlayer().setVolume(newVolume);
     }
 
     public static void volumeDown(Bot bot, String guildId) {
         AudioHandler handler = (AudioHandler) bot.getJDA().getGuildById(guildId).getAudioManager().getSendingHandler();
         int volume = handler.getPlayer().getVolume();
-        int newVolume = Math.max(0, volume - 2); // Decrease volume by 2
+        int newVolume = Math.max(0, volume - 2);
         handler.getPlayer().setVolume(newVolume);
     }
 }

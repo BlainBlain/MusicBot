@@ -22,6 +22,8 @@ import com.jagrosh.jmusicbot.audio.RequestMetadata;
 import com.jagrosh.jmusicbot.commands.DJCommand;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
 
+import net.dv8tion.jda.api.entities.emoji.Emoji;
+
 /**
  *
  * @author John Grosh <john.a.grosh@gmail.com>
@@ -44,7 +46,7 @@ public class ForceskipCmd extends DJCommand
         RequestMetadata rm = handler.getRequestMetadata();
         event.reply(event.getClient().getSuccess()+" Skipped **"+handler.getPlayer().getPlayingTrack().getInfo().title
                 +"** "+(rm.getOwner() == 0L ? "(autoplay)" : "(requested by **" + FormatUtil.formatUsername(rm.user) + "**)"), msg -> {
-                    msg.addReaction("⏭️").queue(); // Skip reaction
+                    msg.addReaction(Emoji.fromUnicode("⏭️")).queue(); // Skip reaction
                 });
         handler.getPlayer().stopTrack();
     }

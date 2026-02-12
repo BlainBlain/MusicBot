@@ -25,12 +25,13 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.entities.VoiceChannel;
-import net.dv8tion.jda.api.events.ReadyEvent;
-import net.dv8tion.jda.api.events.ShutdownEvent;
+import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent;
-import net.dv8tion.jda.api.events.message.guild.GuildMessageDeleteEvent;
+import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
+import net.dv8tion.jda.api.events.session.ReadyEvent;
+import net.dv8tion.jda.api.events.session.ShutdownEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -42,7 +43,7 @@ import com.jagrosh.jmusicbot.audio.AudioHandler;
 import com.jagrosh.jmusicbot.audio.RequestMetadata;
 import com.jagrosh.jmusicbot.utils.FormatUtil;
 import com.jagrosh.jmusicbot.settings.Settings;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Role;
 import java.util.Map;
@@ -107,7 +108,7 @@ public class Listener extends ListenerAdapter
     }
     
     @Override
-    public void onGuildMessageDelete(GuildMessageDeleteEvent event) 
+    public void onMessageDelete(MessageDeleteEvent event)
     {
         bot.getNowplayingHandler().onMessageDelete(event.getGuild(), event.getMessageIdLong());
     }
@@ -141,12 +142,12 @@ public class Listener extends ListenerAdapter
                 return;
             }
 
-            MessageReaction.ReactionEmote emote = event.getReaction().getReactionEmote();
-            if (!emote.isEmoji()) {
+            Emoji reactionEmoji = event.getEmoji();
+            if (reactionEmoji.getType() != Emoji.Type.UNICODE) {
                 return;
             }
 
-            String emoji = emote.getEmoji();
+            String emoji = reactionEmoji.getName();
             User user = event.getUser();
             Guild guild = event.getGuild();
 
@@ -162,11 +163,9 @@ public class Listener extends ListenerAdapter
 
             switch (emoji) {
                 case "🔊":
-                    message.delete().queue();
                     handleVolumeChange(event, true);
                     break;
                 case "🔉":
-                    message.delete().queue();
                     handleVolumeChange(event, false);
                     break;
                 case "⏭️":
@@ -197,13 +196,20 @@ public class Listener extends ListenerAdapter
         AudioHandler handler = (AudioHandler) event.getGuild().getAudioManager().getSendingHandler();
         if (handler != null) {
             int volume = handler.getPlayer().getVolume();
-            event.getChannel().sendMessage(FormatUtil.volumeIcon(volume) + " Current volume is `" + volume + "`").queue(msg -> {
-                msg.addReaction("🔉").queue();
-                msg.addReaction("🔊").queue();
+            event.getChannel().retrieveMessageById(event.getMessageId()).queue(originalMsg -> {
+                originalMsg.clearReactions().queue(success -> {
+                    originalMsg.editMessage(FormatUtil.volumeIcon(volume) + " Current volume is `" + volume + "`").queue(editedMsg -> {
+                        editedMsg.addReaction(Emoji.fromUnicode("🔉")).queue();
+                        editedMsg.addReaction(Emoji.fromUnicode("🔊")).queue();
+                    });
+                });
+            }, throwable -> {
+                event.getChannel().sendMessage(FormatUtil.volumeIcon(volume) + " Current volume is `" + volume + "`").queue(msg -> {
+                    msg.addReaction(Emoji.fromUnicode("🔉")).queue();
+                    msg.addReaction(Emoji.fromUnicode("🔊")).queue();
+                });
             });
         }
-
-        deleteMessagesWithSameReaction(event, increase ? "🔊" : "🔉");
     }
 
     private void handleSkipReaction(MessageReactionAddEvent event) {
@@ -223,7 +229,7 @@ public class Listener extends ListenerAdapter
 
         handler.getPlayer().stopTrack();
         event.getChannel().sendMessage(skipMessage).queue(msg -> {
-            msg.addReaction("⏭️").queue();
+            msg.addReaction(Emoji.fromUnicode("⏭️")).queue();
         });
 
         deleteMessagesWithSameReaction(event, "⏭️");
@@ -235,8 +241,8 @@ public class Listener extends ListenerAdapter
             return false;
         }
 
-        VoiceChannel botChannel = guild.getSelfMember().getVoiceState().getChannel();
-        VoiceChannel userChannel = member.getVoiceState().getChannel();
+        var botChannel = guild.getSelfMember().getVoiceState().getChannel();
+        var userChannel = member.getVoiceState().getChannel();
         return botChannel != null && botChannel.equals(userChannel);
     }
 
@@ -256,7 +262,7 @@ public class Listener extends ListenerAdapter
     }
 
     private void deleteMessagesWithSameReaction(MessageReactionAddEvent event, String emoji) {
-        TextChannel channel = event.getTextChannel();
+        TextChannel channel = event.getChannel().asTextChannel();
         String messageId = event.getMessageId();
     
         channel.getHistory().retrievePast(5).queue(messages -> {
@@ -269,7 +275,7 @@ public class Listener extends ListenerAdapter
                 }
  
                 if (message.getReactions().stream()
-                        .anyMatch(reaction -> reaction.getReactionEmote().isEmoji() && reaction.getReactionEmote().getEmoji().equals(emoji))) {
+                        .anyMatch(reaction -> reaction.getEmoji().getType() == Emoji.Type.UNICODE && reaction.getEmoji().getName().equals(emoji))) {
                     message.delete().queue();
                 }
             }
