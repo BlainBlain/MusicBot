@@ -23,7 +23,7 @@ download() {
 }
 
 run() {
-    java -Dnogui=true -jar $(ls -t JMusicBot* | head -1)
+    java --enable-native-access=ALL-UNNAMED -Dnogui=true -jar $(ls -t JMusicBot* | head -1)
 }
 
 while

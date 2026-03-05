@@ -37,9 +37,7 @@ import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.audio.AudioModuleConfig;
-import moe.kyokobot.libdave.DaveFactory;
-import moe.kyokobot.libdave.NativeDaveFactory;
-import moe.kyokobot.libdave.jda.LDJDADaveSessionFactory;
+import club.minnced.discord.jdave.interop.JDaveSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.Level;
@@ -120,8 +118,7 @@ public class JMusicBot
         // attempt to log in and start
         try
         {
-            DaveFactory daveFactory = new NativeDaveFactory();
-            LDJDADaveSessionFactory daveSessionFactory = new LDJDADaveSessionFactory(daveFactory);
+            JDaveSessionFactory daveSessionFactory = new JDaveSessionFactory();
             LOG.info("DAVE protocol (E2EE) initialized successfully");
 
             JDA jda = JDABuilder.create(config.getToken(), Arrays.asList(INTENTS))

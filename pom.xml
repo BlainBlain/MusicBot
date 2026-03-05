@@ -66,24 +66,29 @@
 
         <!-- DAVE Protocol (E2EE) Dependencies -->
         <dependency>
-            <groupId>moe.kyokobot.libdave</groupId>
-            <artifactId>adapter-jda</artifactId>
-            <version>0.1.0</version>
+            <groupId>club.minnced</groupId>
+            <artifactId>jdave-api</artifactId>
+            <version>0.1.7</version>
         </dependency>
         <dependency>
-            <groupId>moe.kyokobot.libdave</groupId>
-            <artifactId>impl-jni</artifactId>
-            <version>0.1.0</version>
+            <groupId>club.minnced</groupId>
+            <artifactId>jdave-native-win-x86-64</artifactId>
+            <version>0.1.7</version>
         </dependency>
         <dependency>
-            <groupId>moe.kyokobot.libdave</groupId>
-            <artifactId>natives-win-x86-64</artifactId>
-            <version>0.1.0</version>
+            <groupId>club.minnced</groupId>
+            <artifactId>jdave-native-linux-x86-64</artifactId>
+            <version>0.1.7</version>
         </dependency>
         <dependency>
-            <groupId>moe.kyokobot.libdave</groupId>
-            <artifactId>natives-linux-x86-64</artifactId>
-            <version>0.1.0</version>
+            <groupId>club.minnced</groupId>
+            <artifactId>jdave-native-linux-aarch64</artifactId>
+            <version>0.1.7</version>
+        </dependency>
+        <dependency>
+            <groupId>club.minnced</groupId>
+            <artifactId>jdave-native-darwin</artifactId>
+            <version>0.1.7</version>
         </dependency>
 
         <!-- Music Dependencies -->
@@ -172,6 +177,7 @@
                             <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                 <manifestEntries>
                                     <Main-Class>com.jagrosh.jmusicbot.JMusicBot</Main-Class>
+                                    <Enable-Native-Access>ALL-UNNAMED</Enable-Native-Access>
                                     <Specification-Title>${project.artifactId}</Specification-Title>
                                     <Specification-Version>${project.version}</Specification-Version>
                                     <Implementation-Title>${project.artifactId}</Implementation-Title>
@@ -189,7 +195,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
     </properties>
 </project>
